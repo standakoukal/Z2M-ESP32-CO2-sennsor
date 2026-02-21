@@ -26,6 +26,8 @@ zigbee:
   id: zb_node
   manufacturer: "Custom-DIY"
   name: "ESPHome CO2 Sensor"
+  power_supply: 4    # DC source (USB-C powered)
+  router: true
 
   endpoints:
     # --- ENDPOINT 1: TEMPERATURE + HUMIDITY (standard pattern) ---
