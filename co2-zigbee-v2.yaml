@@ -1,0 +1,101 @@
+esphome:
+  name: co2-lada
+  friendly_name: CO2_lada
+
+external_components:
+  - source: github://luar123/zigbee_esphome
+    refresh: 0s
+    components: [ zigbee ]
+
+esp32:
+  board: esp32-c6-devkitc-1
+  variant: esp32c6
+  framework:
+    type: esp-idf
+  partitions: partitions_zb.csv
+
+i2c:
+  sda: GPIO22
+  scl: GPIO23
+  scan: true
+  id: bus_a
+  sda_pullup_enabled: true
+  scl_pullup_enabled: true
+
+zigbee:
+  id: zb_node
+  manufacturer: "Custom-DIY"
+  name: "ESPHome CO2 Sensor"
+
+  endpoints:
+    # --- ENDPOINT 1: TEMPERATURE + HUMIDITY (standard pattern) ---
+    - num: 1
+      device_type: TEMPERATURE_SENSOR
+      clusters:
+        - id: TEMP_MEASUREMENT
+          attributes:
+            - id: zb_temp_val
+              attribute_id: 0x0000
+              type: S16        # °C × 100 → e.g. 2150 = 21.50°C
+              report: true
+
+        - id: REL_HUMIDITY_MEASUREMENT
+          attributes:
+            - id: zb_hum_val
+              attribute_id: 0x0000
+              type: U16        # %RH × 100 → e.g. 5500 = 55.00%
+              report: true
+
+    # --- ENDPOINT 2: CO2 via ANALOG_INPUT (float, in PPM) ---
+    - num: 2
+      device_type: SIMPLE_SENSOR
+      clusters:
+        - id: ANALOG_INPUT
+          attributes:
+            - id: zb_co2_oos          # out-of-service — mandatory, must be false
+              attribute_id: 0x0051
+              type: BOOL
+              value: False
+            - id: zb_co2_val          # present-value — the actual CO2 reading
+              attribute_id: 0x0055
+              type: SINGLE
+              report: true
+              value: 400.0
+            - id: zb_co2_flags        # status-flags — mandatory
+              attribute_id: 0x006F
+              type: 8BITMAP
+              value: 0
+sensor:
+  - platform: scd4x
+    id: my_scd4x
+    address: 0x62
+    update_interval: 60s
+    automatic_self_calibration: true
+
+    temperature:
+      name: "Temperature"
+      on_value:
+        then:
+          - zigbee.setAttr:
+              id: zb_temp_val
+              value: !lambda "return (int16_t)(x * 100);"
+
+    humidity:
+      name: "Humidity"
+      on_value:
+        then:
+          - zigbee.setAttr:
+              id: zb_hum_val
+              value: !lambda "return (uint16_t)(x * 100);"
+
+    co2:
+      name: "CO2"
+      on_value:
+        then:
+          - zigbee.setAttr:
+              id: zb_co2_val
+              value: !lambda "return (float)x;"  # Clean PPM, no scaling needed
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: DEBUG   # Keep DEBUG while testing so you can see attribute writes
