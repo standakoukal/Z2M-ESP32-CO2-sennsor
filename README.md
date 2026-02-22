@@ -45,8 +45,8 @@ Z2M-ESP32-CO2-sennsor/
 |-----------|-------------|
 | VDD | 3.3V |
 | GND | GND |
-| SDA | GPIO6 (or as configured in YAML) |
-| SCL | GPIO7 (or as configured in YAML) |
+| SDA | GPIO6 (or as configured in YAML sda: GPIO22) |
+| SCL | GPIO7 (or as configured in YAML scl: GPIO23) |
 
 > Check `co2-zigbee-v2.yaml` for the exact GPIO pin assignments used in this build.
 
@@ -56,19 +56,16 @@ Z2M-ESP32-CO2-sennsor/
 
 ### Option A: Pre-compiled Binary (Easiest)
 
-1. Install [esptool](https://github.com/espressif/esptool) or use the [ESP Web Flasher](https://espressif.github.io/esptool-js/).
+1. I use [ESP Web Flasher](https://espressif.github.io/esptool-js/). 
 2. Download the binary from the `Compiled/` folder.
-3. Flash to your ESP32-C6:
-
-```bash
-esptool.py --chip esp32c6 --port /dev/ttyUSB0 write_flash 0x0 Compiled/firmware.bin
-```
+3. Flash to your ESP32-C6. Flash to address 0x0 (factory format)
 
 ### Option B: Build from Source
 
-1. Install [ESPHome](https://esphome.io/guides/installing_esphome.html).
-2. Clone this repository.
-3. Build and flash:
+1. Install [ESPHome](https://esphome.io/guides/installing_esphome.html). I use ESPhome builder in Home Assistant 
+2. Clone or donload files from this repository.
+3. The `partitions_zb.csv` file provides a custom flash partition layout required for the Zigbee stack to coexist with the application firmware on the ESP32-C6. Copy it to your ESPHome directory
+4. Compile and flas to your ESP32-C6
 
 ```bash
 esphome run co2-zigbee-v2.yaml
@@ -92,6 +89,7 @@ external_converters:
 4. Put the sensor in pairing mode and join it to your Zigbee network.
 5. The device will appear with CO2, temperature, and humidity entities.
 
+ESP32-C6 has pretty weak signal when using zigbee. Usualy you need to be close to your coordinator for the device to join your network. 
 ---
 
 ## Home Assistant
@@ -108,7 +106,7 @@ The `partitions_zb.csv` file provides a custom flash partition layout required f
 
 ## License
 
-This project is open source. Feel free to use, modify, and share it.
+This project is open source. Feel free to use, modify, and share it. 
 
 ---
 
